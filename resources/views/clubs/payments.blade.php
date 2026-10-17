@@ -1,0 +1,5 @@
+@extends('layouts.app')
+@section('page-title', 'Payment instructions')
+@section('content')
+<p class="eyebrow">{{ $club->name }}</p><h1>Club payment instructions</h1><div class="notice">These are the club's active payment destinations. This page does not process transactions, verify contributions or activate financial membership.</div><div class="form-columns">@forelse($destinations as $destination)<section class="card"><h2>{{ $destination->label }}</h2><span class="badge">{{ $destination->type==='bank'?'Bank':'Mobile Money' }}</span><dl class="details-grid">@if($destination->type==='bank')<dt>Bank</dt><dd>{{ $destination->bank_name }}</dd><dt>Account name</dt><dd>{{ $destination->account_name }}</dd><dt>Account number</dt><dd>{{ $destination->account_number }}</dd>@else<dt>Provider</dt><dd>{{ $destination->provider }}</dd><dt>Number</dt><dd>{{ $destination->mobile_number }}</dd><dt>Account holder</dt><dd>{{ $destination->account_holder }}</dd>@endif</dl></section>@empty<section class="card empty">No active payment destinations have been configured.</section>@endforelse</div>
+@endsection

@@ -215,7 +215,7 @@ class PlatformManagementTest extends TestCase
         $this->assertDatabaseCount('platform_activities', 0);
     }
 
-    public function test_pending_administrator_has_only_scoped_onboarding_access(): void
+    public function test_pending_administrator_has_only_scoped_administrative_access(): void
     {
         $user = User::factory()->create();
         $club = Club::factory()->create();
@@ -224,7 +224,7 @@ class PlatformManagementTest extends TestCase
         $this->actingAs($user)->get('/dashboard')->assertRedirect(route('clubs.onboarding', $club));
         $this->get(route('clubs.onboarding', $club))->assertOk()->assertSee('Administrative onboarding only')->assertDontSee($other->name);
         $this->get(route('clubs.show', $club))->assertForbidden();
-        $this->get(route('clubs.members', $club))->assertForbidden();
+        $this->get(route('clubs.members', $club))->assertOk()->assertSee('Members');
         $this->get(route('clubs.onboarding', $other))->assertForbidden();
         $this->get(route('clubs.show', $other))->assertForbidden();
         $this->post(route('clubs.invite', $club), ['phone' => '+250788111999'])->assertSessionHas('invitation_url');

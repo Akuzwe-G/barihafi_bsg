@@ -15,10 +15,10 @@
 @foreach($memberships->where('status','!=','active') as $item)<div class="card">
 <h2>{{ $item->club->name }}</h2>
 <span class="badge">{{ ucfirst($item->status) }}</span>
-<p class="muted">@if($item->status==='pending')Awaiting first complete share contribution verification. Financial verification is not available yet.@else Contact your club administrator about your membership status. @endif</p>
+<p class="muted">@if($item->status==='pending')Admission: {{ ucfirst(str_replace('_',' ',$item->admission_status)) }}. Financial verification is not available yet. <a href="{{ route('requests.mine') }}">View request history</a>@else Contact your club administrator about your membership status. @endif</p>
 </div>@endforeach
 @foreach($invitations as $item)<div class="card">
 <h2>Invitation: {{ $item->club->name }}</h2>
-<p class="muted">Expires {{ $item->expires_at->format('d M Y') }}. Open the private invitation link sent by your administrator to accept.</p>
+<p class="muted">Expires {{ $item->expires_at->timezone('Indian/Mauritius')->format('d M Y') }}. Accept this invitation to submit your club admission request. Financial membership remains pending.</p><form method="post" action="{{ route('invitations.accept',$item) }}">@csrf<button type="submit">Accept invitation</button></form>
 </div>@endforeach
 @endsection

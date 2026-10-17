@@ -441,3 +441,16 @@ hr { border-color: #363b45; margin: 25px 0; }
 .table-scroll table { min-width: 580px; }
 .table-scroll td:first-child { min-width: 140px; }
 .table-scroll:focus-visible, .chart-scroll:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 3px; }
+
+.setup-checklist { display: grid; gap: 15px; margin: 20px 0 25px; }
+.setup-checklist li { display: flex; align-items: center; gap: 12px; font-size: 12px; }
+.header-club { margin: 0; font-size: 11px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notification-link { display: inline-flex; align-items: center; gap: 6px; padding: 10px; border-radius: 7px; color: #edf0f5; }
+.notification-link span { font-size: 10px; background: var(--brand-accent); color: #17191d; border-radius: 50%; padding: 0 5px; }
+@media(max-width:800px){ .header-club { max-width: 130px; font-size: 10px; } .header-actions > a:not(.notification-link) { font-size: 10px; max-width: 45px; } }
+
+aside { overflow-y: auto; }
+.header-title { flex: 1; min-width: 0; }
+.header-title > div { min-width: 0; }
+.header-club { overflow: hidden; text-overflow: ellipsis; }
+@media(max-width:800px){ .header-title .context { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .header-actions { flex-shrink: 0; } .header-club { max-width: 110px; } }

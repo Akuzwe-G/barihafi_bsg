@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Club;
 use App\Models\ClubInvitation;
 use App\Models\ClubMembership;
+use App\Models\ClubNotification;
 use App\Models\PlatformActivity;
+use App\Models\User;
 use App\Support\ClubAdministration;
+use App\Support\ClubMembershipWorkflow;
 use App\Support\Phone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,9 +57,7 @@ class ClubController extends Controller
 
     public function onboarding(Request $request, Club $club): View
     {
-        Gate::authorize('onboard', $club);
-
-        return view('club-onboarding', ['club' => $club]);
+        return app(ClubWorkspaceController::class)->dashboard($club);
     }
 
     public function show(Request $request, Club $club): View
@@ -67,29 +68,14 @@ class ClubController extends Controller
         return view('club', ['club' => $club, 'membership' => $membership]);
     }
 
-    public function members(Club $club): View
+    public function members(Request $request, Club $club): View
     {
-        Gate::authorize('manage', $club);
-
-        return view('members', ['club' => $club, 'memberships' => $club->memberships()->with('user')->get()]);
+        return app(ClubMemberController::class)->index($request, $club);
     }
 
-    public function member(Request $request, Club $club, ClubMembership $membership): RedirectResponse
+    public function member(Request $request, Club $club, ClubMembership $membership, ClubMembershipWorkflow $workflow): RedirectResponse
     {
-        Gate::authorize('manage', $club);
-        abort_unless($membership->club_id === $club->id, 404);
-        $data = $request->validate(['roles' => ['required', 'array', 'min:1'], 'roles.*' => [Rule::in(ClubMembership::ROLES)], 'status' => ['required', Rule::in(['unchanged', 'pending', 'suspended', 'revoked'])]]);
-        DB::transaction(function () use ($request, $membership, $data, $club): void {
-            $updates = ['roles' => array_values(array_unique([...$data['roles'], 'Member']))];
-            if ($data['status'] !== 'unchanged') {
-                $updates['status'] = $data['status'];
-                $club->joinRequests()->where('user_id', $membership->user_id)->update(['status' => $data['status']]);
-            }
-            $membership->update($updates);
-            PlatformActivity::record($request->user(), 'club.membership_updated', $membership->user, $club, ['status' => $membership->fresh()->status, 'roles' => $membership->fresh()->roles]);
-        });
-
-        return back()->with('status', 'Membership updated. Activation is unavailable until financial verification exists.');
+        return app(ClubMemberController::class)->update($request, $club, $membership, $workflow);
     }
 
     public function invite(Request $request, Club $club): RedirectResponse
@@ -100,6 +86,10 @@ class ClubController extends Controller
         DB::transaction(function () use ($request, $club, $data, $token): void {
             $club->invitations()->create(['phone' => Phone::normalize($data['phone']), 'token_hash' => hash('sha256', $token), 'expires_at' => now()->addDays(7)]);
             PlatformActivity::record($request->user(), 'club.invitation_created', $club, $club);
+            $recipient = User::where('phone', Phone::normalize($data['phone']))->first();
+            if ($recipient) {
+                ClubNotification::send($club, $recipient->id, 'invitation', 'You have a private club invitation. Review and accept it from your workspace.');
+            }
         });
 
         return back()->with('invitation_url', route('join', ['invitation' => $token]))->with('status', 'Invitation expires in seven days. Share the link privately with the intended recipient.');

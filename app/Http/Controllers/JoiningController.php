@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Club;
 use App\Models\ClubInvitation;
-use App\Models\ClubJoinRequest;
-use App\Models\ClubMembership;
+use App\Models\PlatformActivity;
 use App\Models\User;
+use App\Support\ClubMembershipWorkflow;
 use App\Support\Phone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,12 +51,10 @@ class JoiningController extends Controller
                 throw ValidationException::withMessages(['code' => 'This joining code or invitation is unavailable.']);
             }
             $user ??= User::create($account);
-            $membership = ClubMembership::firstOrCreate(['club_id' => $club->id, 'user_id' => $user->id], ['status' => 'pending', 'roles' => ['Member'], 'joined_at' => now()]);
-            if ($membership->status === 'pending') {
-                ClubJoinRequest::firstOrCreate(['club_id' => $club->id, 'user_id' => $user->id], ['status' => 'pending']);
-            }
+            app(ClubMembershipWorkflow::class)->submit($user, $club);
             if ($invitation) {
                 $invitation->update(['accepted_at' => now()]);
+                PlatformActivity::record($user, 'club.invitation_accepted', $club, $club);
             }
 
             return $user;
@@ -67,5 +65,20 @@ class JoiningController extends Controller
         }
 
         return redirect()->route('dashboard')->with('status', 'Request recorded. Membership remains pending until the first complete share contribution is verified. Financial verification is not available yet.');
+    }
+
+    public function accept(Request $request, ClubInvitation $invitation): RedirectResponse
+    {
+        DB::transaction(function () use ($request, $invitation): void {
+            $invitation = ClubInvitation::whereKey($invitation->id)->where('phone', $request->user()->phone)->whereNull('accepted_at')->where('expires_at', '>', now())->lockForUpdate()->first();
+            abort_unless($invitation, 404);
+            $club = Club::whereKey($invitation->club_id)->where('is_active', true)->first();
+            abort_unless($club, 404);
+            app(ClubMembershipWorkflow::class)->submit($request->user(), $club);
+            $invitation->update(['accepted_at' => now()]);
+            PlatformActivity::record($request->user(), 'club.invitation_accepted', $club, $club);
+        });
+
+        return redirect()->route('requests.mine')->with('status', 'Invitation accepted. Admission is awaiting club review; financial membership remains pending.');
     }
 }

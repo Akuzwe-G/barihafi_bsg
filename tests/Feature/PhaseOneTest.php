@@ -254,7 +254,7 @@ class PhaseOneTest extends TestCase
         $this->actingAs($user)->patch(route('clubs.members.update', [$one, $foreign]), ['roles' => ['President'], 'status' => 'suspended'])->assertNotFound();
         $this->patch(route('clubs.members.update', [$one, $own]), ['roles' => ['Member'], 'status' => 'active'])->assertSessionHasErrors('status');
         $this->assertSame('pending', $own->fresh()->status);
-        $this->patch(route('clubs.members.update', [$one, $own]), ['roles' => ['President'], 'status' => 'suspended'])->assertSessionHasNoErrors();
+        $this->patch(route('clubs.members.update', [$one, $own]), ['roles' => ['Committee Member'], 'status' => 'suspended'])->assertSessionHasNoErrors();
         $this->assertSame('suspended', $own->fresh()->status);
         $this->assertContains('Member', $own->fresh()->roles);
     }
@@ -359,6 +359,8 @@ class PhaseOneTest extends TestCase
     {
         $admin = User::factory()->create();
         $club = Club::factory()->create();
+        $club->delegated_roles = ['Member', 'President'];
+        $club->save();
         $this->membership($admin, $club, 'active', ['Club Administrator', 'Member']);
         foreach (['active', 'pending', 'suspended', 'revoked'] as $status) {
             $user = User::factory()->create();

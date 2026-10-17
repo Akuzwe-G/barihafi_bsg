@@ -26,4 +26,14 @@ class ClubPolicy
     {
         return $this->manage($user, $club) || $this->onboard($user, $club);
     }
+
+    public function govern(User $user, Club $club): bool
+    {
+        return $this->administer($user, $club) || $this->reviewRules($user, $club);
+    }
+
+    public function reviewRules(User $user, Club $club): bool
+    {
+        return $user->account_status === 'active' && $club->is_active && $club->memberships()->where('user_id', $user->id)->whereJsonContains('roles', 'President')->where(fn ($q) => $q->where('status', 'active')->orWhere(fn ($q) => $q->where('status', 'pending')->where('has_governance_access', true)))->exists();
+    }
 }

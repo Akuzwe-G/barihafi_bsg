@@ -4,6 +4,12 @@ use App\Http\Controllers\AccountSetupController;
 use App\Http\Controllers\AdminClubController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClubController;
+use App\Http\Controllers\ClubGovernanceController;
+use App\Http\Controllers\ClubJoinRequestController;
+use App\Http\Controllers\ClubMemberController;
+use App\Http\Controllers\ClubNotificationController;
+use App\Http\Controllers\ClubSettingsController;
+use App\Http\Controllers\ClubWorkspaceController;
 use App\Http\Controllers\JoiningController;
 use App\Http\Controllers\PasswordChangeController;
 use App\Http\Controllers\PlatformController;
@@ -63,3 +69,32 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/account/setup/{token}', [AccountSetupController::class, 'store'])->middleware('throttle:5,1')->name('account.setup.store');
 });
 Route::get('/clubs/{club}/onboarding', [ClubController::class, 'onboarding'])->middleware(['auth', 'auth.session'])->name('clubs.onboarding');
+
+Route::middleware(['auth', 'auth.session'])->group(function (): void {
+    Route::get('/clubs/{club}/admin', [ClubWorkspaceController::class, 'dashboard'])->name('clubs.admin.dashboard');
+    Route::get('/clubs/{club}/members/create', [ClubMemberController::class, 'create'])->name('clubs.members.create');
+    Route::post('/clubs/{club}/members', [ClubMemberController::class, 'store'])->middleware('throttle:10,1')->name('clubs.members.store');
+    Route::get('/clubs/{club}/members/{membership}', [ClubMemberController::class, 'show'])->name('clubs.members.show');
+    Route::get('/clubs/{club}/requests', [ClubJoinRequestController::class, 'index'])->name('clubs.requests');
+    Route::post('/clubs/{club}/requests/{joinRequest}/review', [ClubJoinRequestController::class, 'review'])->name('clubs.requests.review');
+    Route::get('/my-requests', [ClubJoinRequestController::class, 'mine'])->name('requests.mine');
+    Route::post('/club-invitations/{invitation}/accept', [JoiningController::class, 'accept'])->name('invitations.accept');
+    Route::get('/clubs/{club}/settings', [ClubSettingsController::class, 'edit'])->name('clubs.settings');
+    Route::patch('/clubs/{club}/settings', [ClubSettingsController::class, 'update'])->name('clubs.settings.update');
+    Route::post('/clubs/{club}/settings/join-code', [ClubSettingsController::class, 'rotateCode'])->name('clubs.settings.code');
+    Route::post('/clubs/{club}/payment-destinations', [ClubSettingsController::class, 'payment'])->name('clubs.payments.store');
+    Route::patch('/clubs/{club}/payment-destinations/{destination}', [ClubSettingsController::class, 'payment'])->name('clubs.payments.update');
+    Route::get('/clubs/{club}/payments', [ClubSettingsController::class, 'instructions'])->name('clubs.payments');
+    Route::get('/clubs/{club}/governance', [ClubGovernanceController::class, 'index'])->name('clubs.governance');
+    Route::post('/clubs/{club}/governance/proposals', [ClubGovernanceController::class, 'propose'])->name('clubs.governance.propose');
+    Route::post('/clubs/{club}/governance/proposals/{proposal}/review', [ClubGovernanceController::class, 'review'])->name('clubs.governance.review');
+    Route::get('/notifications', [ClubNotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('/notifications/{notification}/read', [ClubNotificationController::class, 'read'])->name('notifications.read');
+});
+Route::middleware(['auth', 'auth.session', 'can:platform'])->prefix('admin/clubs/{club}')->group(function (): void {
+    Route::get('/governance', [ClubGovernanceController::class, 'platform'])->name('admin.clubs.governance');
+    Route::patch('/governance', [ClubGovernanceController::class, 'platformUpdate'])->name('admin.clubs.governance.update');
+    Route::patch('/memberships/{membership}/roles', [ClubGovernanceController::class, 'platformRoles'])->name('admin.clubs.memberships.roles');
+});
+
+Route::get('/clubs/{club}/activities', [ClubWorkspaceController::class, 'activities'])->middleware(['auth', 'auth.session'])->name('clubs.activities');

@@ -11,7 +11,7 @@ class Club extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'is_active', 'join_code', 'code', 'description', 'contact_phone', 'status'];
+    protected $fillable = ['name', 'is_active', 'join_code', 'code', 'description', 'contact_phone', 'status', 'contact_email', 'address'];
 
     protected static function booted(): void
     {
@@ -35,7 +35,7 @@ class Club extends Model
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean', 'suspended_at' => 'datetime'];
+        return ['is_active' => 'boolean', 'suspended_at' => 'datetime', 'delegated_roles' => 'array'];
     }
 
     public function memberships(): HasMany
@@ -51,5 +51,25 @@ class Club extends Model
     public function joinRequests(): HasMany
     {
         return $this->hasMany(ClubJoinRequest::class);
+    }
+
+    public function paymentDestinations(): HasMany
+    {
+        return $this->hasMany(ClubPaymentDestination::class);
+    }
+
+    public function ruleProposals(): HasMany
+    {
+        return $this->hasMany(FinancialRuleProposal::class);
+    }
+
+    public function policyVersions(): HasMany
+    {
+        return $this->hasMany(ClubPolicyVersion::class);
+    }
+
+    public function assignableRoles(): array
+    {
+        return $this->delegated_roles ?? ['Member', 'Committee Member'];
     }
 }

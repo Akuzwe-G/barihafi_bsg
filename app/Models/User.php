@@ -42,13 +42,21 @@ class User extends Authenticatable
     public function accessibleClubs(): Builder
     {
         return Club::query()->where('is_active', true)->whereHas('memberships', fn ($query) => $query->where('user_id', $this->id)->where(function ($membership): void {
-            $membership->where('status', 'active')->orWhere(fn ($pending) => $pending->where('status', 'pending')->where('has_onboarding_access', true)->whereJsonContains('roles', 'Club Administrator'));
+            $membership->where('status', 'active')->orWhere(fn ($pending) => $pending->where('status', 'pending')->where('has_onboarding_access', true)->whereJsonContains('roles', 'Club Administrator'))->orWhere(fn ($leadership) => $leadership->where('status', 'pending')->where('has_governance_access', true)->whereJsonContains('roles', 'President'));
         }));
     }
 
     public function clubLandingRoute(Club $club): string
     {
-        return $this->memberships()->where('club_id', $club->id)->where('status', 'active')->exists() ? 'clubs.show' : 'clubs.onboarding';
+        $membership = $this->memberships()->where('club_id', $club->id)->first();
+        if ($membership && in_array('Club Administrator', $membership->roles, true)) {
+            return $membership->status === 'active' ? 'clubs.admin.dashboard' : 'clubs.onboarding';
+        }
+        if ($membership?->status === 'pending' && $membership->has_governance_access) {
+            return 'clubs.governance';
+        }
+
+        return 'clubs.show';
     }
 
     /** @use HasFactory<UserFactory> */
