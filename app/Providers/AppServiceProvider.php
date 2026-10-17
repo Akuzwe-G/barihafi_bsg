@@ -2,7 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\PlatformSetting;
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\View\View;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +23,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        \Illuminate\Support\Facades\View::composer('layouts.app', function (View $view): void {
+            $view->with('branding', PlatformSetting::current());
+        });
+        Gate::define('platform', fn (User $user): bool => $user->hasPlatformRole(User::SYSTEM_ADMIN_ROLE));
     }
 }

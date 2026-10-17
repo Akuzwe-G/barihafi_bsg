@@ -1,0 +1,6 @@
+@extends('layouts.app')
+@section('page-title', 'My Profile')
+@section('content')
+<div class="page-heading"><div><p class="eyebrow">PERSONAL ACCOUNT</p><h1>My profile</h1><p class="muted">Keep your contact details accurate. Your current password is required to save changes.</p></div><a class="button secondary" href="{{ route('password.change') }}">Change password</a></div>
+<section class="card form-narrow"><form method="post" action="{{ route('admin.profile.update') }}" x-data="{ submitting: false }" @submit="submitting = true">@csrf @method('PATCH')<label for="name">Full name</label><input id="name" name="name" value="{{ old('name', auth()->user()->name) }}" maxlength="150" required autocomplete="name"><label for="phone">Phone number</label><input id="phone" name="phone" type="tel" value="{{ old('phone', auth()->user()->phone) }}" maxlength="40" required autocomplete="tel"><label for="email">Email (optional)</label><input id="email" name="email" type="email" value="{{ old('email', auth()->user()->email) }}" maxlength="255" autocomplete="email"><label for="current-password">Current password</label><input id="current-password" name="current_password" type="password" required autocomplete="current-password"><button type="submit" :disabled="submitting" x-text="submitting ? 'Saving...' : 'Save my profile'">Save my profile</button></form></section>
+@endsection

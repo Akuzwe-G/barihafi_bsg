@@ -1,0 +1,15 @@
+@extends('layouts.app')
+@section('content')<p class="eyebrow">CLUB OVERVIEW</p>
+<h1>{{ $club->name }}</h1>
+<p class="muted">Your membership is active. Your roles apply within this club.</p>
+<div class="role-list">@foreach(array_unique([...$membership->roles,'Member']) as $role)<span class="badge">{{ $role }}</span>@endforeach</div>
+<div class="grid">
+@foreach(array_unique([...$membership->roles,'Member']) as $role)<section class="card">
+<p class="eyebrow">{{ $role }}</p>
+<h2>{{ match($role) { 'Club Administrator'=>'Club administration', 'President'=>'Leadership workspace', 'Accountant'=>'Accounting workspace', 'Committee Member'=>'Committee workspace', default=>'Member workspace' } }}</h2>
+<p class="muted">{{ match($role) { 'Club Administrator'=>'Manage club invitations and membership roles.', 'President'=>'Club oversight tools will be added in a later phase.', 'Accountant'=>'Financial reporting will be added in a later phase.', 'Committee Member'=>'Committee activities will be added in a later phase.', default=>'No share transactions recorded yet.' } }}</p>@if($role==='Club Administrator')<a href="{{ route('clubs.members',$club) }}">Manage memberships ?</a>@endif</section>@endforeach</div>
+<div class="card">
+<h2>Financial activity</h2>
+<div class="empty">No share transactions recorded yet.<p class="muted">Shares, savings, loans and ledger tools are planned for later phases.</p>
+</div>
+</div>@endsection
