@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Club;
 use App\Models\ClubNotification;
 use App\Models\PlatformSetting;
 use App\Models\User;
+use App\Policies\ClubPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\View;
@@ -28,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
             $view->with('branding', PlatformSetting::current());
             $view->with('unreadNoticeCount', auth()->check() && ! auth()->user()->must_change_password ? ClubNotification::where('user_id', auth()->id())->whereNull('read_at')->count() : 0);
         });
+        foreach (['financial_settings.view' => 'govern', 'financial_settings.propose' => 'administer', 'financial_settings.approve' => 'reviewRules', 'financial_settings.history' => 'govern', 'committee.view' => 'govern', 'committee.manage' => 'administer'] as $permission => $ability) {
+            Gate::define($permission, fn (User $user, Club $club): bool => (new ClubPolicy)->{$ability}($user, $club) || (in_array($permission, ['financial_settings.view', 'financial_settings.history', 'committee.view'], true) && (new ClubPolicy)->view($user, $club)));
+        }
         Gate::define('platform', fn (User $user): bool => $user->hasPlatformRole(User::SYSTEM_ADMIN_ROLE));
     }
 }

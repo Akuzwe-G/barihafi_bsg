@@ -10,6 +10,7 @@ use App\Http\Controllers\ClubMemberController;
 use App\Http\Controllers\ClubNotificationController;
 use App\Http\Controllers\ClubSettingsController;
 use App\Http\Controllers\ClubWorkspaceController;
+use App\Http\Controllers\FinancialSettingsController;
 use App\Http\Controllers\JoiningController;
 use App\Http\Controllers\PasswordChangeController;
 use App\Http\Controllers\PlatformController;
@@ -98,3 +99,15 @@ Route::middleware(['auth', 'auth.session', 'can:platform'])->prefix('admin/clubs
 });
 
 Route::get('/clubs/{club}/activities', [ClubWorkspaceController::class, 'activities'])->middleware(['auth', 'auth.session'])->name('clubs.activities');
+
+Route::middleware(['auth', 'auth.session'])->prefix('clubs/{club}/financial-settings')->name('clubs.financial.')->group(function (): void {
+    Route::get('/', [FinancialSettingsController::class, 'index'])->name('index');
+    Route::post('/proposals', [FinancialSettingsController::class, 'store'])->name('proposals.store');
+    Route::get('/proposals/{proposal}', [FinancialSettingsController::class, 'show'])->name('proposals.show');
+    Route::post('/proposals/{proposal}/submit', [FinancialSettingsController::class, 'submit'])->name('proposals.submit');
+    Route::post('/proposals/{proposal}/cancel', [FinancialSettingsController::class, 'cancel'])->name('proposals.cancel');
+    Route::post('/proposals/{proposal}/review', [FinancialSettingsController::class, 'review'])->name('proposals.review');
+    Route::post('/committee', [FinancialSettingsController::class, 'nominate'])->name('committee.nominate');
+    Route::post('/committee/{change}/review', [FinancialSettingsController::class, 'reviewCommittee'])->name('committee.review');
+    Route::get('/{page}', [FinancialSettingsController::class, 'index'])->name('page');
+});

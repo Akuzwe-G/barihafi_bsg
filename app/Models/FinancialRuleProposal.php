@@ -12,11 +12,11 @@ class FinancialRuleProposal extends Model
 
     public const RULE_LABELS = ['share_price' => 'Share price', 'minimum_membership_shares' => 'Minimum membership shares', 'loan_multiplier' => 'Loan multiplier', 'interest_rate' => 'Interest rate (%)', 'interest_method' => 'Interest method', 'loan_duration_months' => 'Loan duration (months)', 'repayment_frequency' => 'Repayment frequency', 'savings_withdrawal_notice_days' => 'Savings withdrawal notice (days)'];
 
-    protected $fillable = ['club_id', 'proposed_by', 'rules', 'base_version', 'status', 'rationale', 'reviewed_by', 'reviewed_at', 'review_reason'];
+    protected $fillable = ['club_id', 'proposed_by', 'rules', 'base_version', 'status', 'rationale', 'reviewed_by', 'reviewed_at', 'review_reason', 'existing_rules', 'effective_at', 'submitted_at', 'is_baseline'];
 
     protected function casts(): array
     {
-        return ['rules' => 'array', 'reviewed_at' => 'datetime', 'base_version' => 'integer'];
+        return ['rules' => 'array', 'existing_rules' => 'array', 'effective_at' => 'datetime', 'submitted_at' => 'datetime', 'is_baseline' => 'boolean', 'reviewed_at' => 'datetime', 'base_version' => 'integer'];
     }
 
     public function proposer(): BelongsTo

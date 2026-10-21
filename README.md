@@ -1,6 +1,91 @@
-# Barihafi - Club Workspace and Platform Administration
+# Barihafi - Financial Governance and Club Administration
 
-Barihafi is an independent Laravel 13.37 application for multiple savings clubs. Phases 1 through 3 provide authentication, controlled account setup, platform and club administration, admission review, notifications and financial-governance specifications. No financial transactions, balances, shares, loans, dividends, banking or ledger posting are implemented.
+Barihafi is an independent Laravel 13.37 application for multiple savings clubs. Phases 1 through 4 provide authentication, controlled account setup, platform and club administration, admission review, notifications, versioned financial configuration and independent governance approvals. No financial transactions, balances, shares, loans, dividends, banking or ledger posting are implemented.
+
+## Phase 4 - Financial configuration and governance
+
+Club-specific shares, savings, lending and governance settings now follow **Draft -> Submitted -> independent President review -> Effective or Scheduled**. Rejected, cancelled and superseded records remain available. Approval is an audited transition before a version becomes scheduled/effective.
+
+### Installation and scheduled activation
+
+Migration: `database/migrations/2026_10_21_080330_extend_financial_governance.php`. This extends existing proposals/versions and creates `committee_membership_changes`; it preserves old approved snapshot values and reconstructs their effective intervals. Legacy pending proposals become submitted. Pre-Phase-4 preparatory committee flags are recorded as legacy history and withdrawn pending fresh independent nomination/approval. Existing accounts, membership activation states and financial records are preserved.
+
+```powershell
+php artisan migrate --no-interaction
+npm.cmd run build
+php artisan serve --host=127.0.0.1 --port=8000
+```
+
+Configure the deployment host to run `php artisan schedule:run` every minute. For local use, run `php artisan schedule:work` in another terminal. The scheduled command runs every minute with overlap protection. It can also be run explicitly:
+
+```powershell
+php artisan barihafi:activate-policies --no-interaction
+```
+
+Activation is idempotent and skips suspended clubs. If the scheduler stops, activation waits until its next successful run; the actual effective interval starts at activation, avoiding retroactive changes. Financial workspace timestamps are UTC.
+
+### Exact workflow to test
+
+1. As an existing System Administrator, assign a Club Administrator and a **different** President using the existing club role tools. Both global accounts must be active. Explicit administrative/President onboarding access still works while financial membership is pending. System Administrator status alone grants no club financial governance access.
+2. As Club Administrator, open **Financial settings -> Propose Rule Changes**. Review the four sections, enter the club's share price/currency and other terms, give a reason and proposed effective time, then **Save draft**. There is no forced initial share price. Suggested values are configuration suggestions, not financial balances.
+3. Inspect the saved comparison, then **Submit for President review**. Effective settings remain unchanged. Submission is blocked if no independent authorised President exists. You can cancel your own draft/submitted proposal and create a corrected replacement; a draft cannot be approved.
+4. As President, use the dashboard's outstanding reviews or **Pending Proposals** to open the proposal. Review existing/proposed values and effective time. Approve with confirmation, or reject with comments. The proposer cannot review their own proposal, including a person holding both Admin and President roles.
+5. The first independently approved version is the **Initial baseline**. Approval effective now creates the sole effective version; future approval is **Scheduled** and retains the current policy until due activation. To test scheduling interactively, choose a time a few minutes ahead and run the activation command after that time.
+6. Draft another change after the baseline. The form starts with the effective settings; optional monetary limits can be cleared. Several drafts may exist, but only one submitted/scheduled proposal may be outstanding per club. Stale submissions/approvals and duplicate decisions are rejected. Resolve the outstanding proposal before submitting another.
+7. Open **Policy Version History** to inspect immutable snapshots, approval references, reviewers, baseline markers and effective intervals. Superseded versions remain unchanged. Future lending must retain the version and agreed terms on each loan rather than recalculate them.
+8. Assign existing **Committee Member** roles using authorised role tools. In **Committee Management**, nominate eligible memberships for appointment with a reason. A separate President who is neither proposer nor affected member approves/rejects each change. Removal uses the same review process. Losing eligibility immediately revokes access and records history; reappointment needs fresh approval.
+9. Quorum/minimum size changes use a financial-policy proposal. Safe minimum: three members and two independent approvals, configurable upwards. Conflicted people, inactive accounts and ineligible memberships do not count. Insufficient quorum blocks future approval. Normal lending still requires Accountant review followed by President approval; committee designation grants no ordinary financial role override.
+10. Inspect real notifications using the bell and the audit trail in **Club activity**. Admin dashboards show draft, submitted, rejected and scheduled counts. Active ordinary members have read-only settings/history/committee access. Cross-club access, suspended clubs/memberships, self approval, ordinary-member approval and platform-only overrides are denied server-side.
+
+### Configuration and safeguards
+
+- **Shares:** currency, positive decimal price, minimum completed shares, partial contributions, verified partial capital eligibility, activation threshold, contribution precision and exit restrictions.
+- **Savings:** support, optional minimum deposit/retained balance, none/weekly/monthly/custom frequency, custom description, withdrawal restrictions/notice. Independent withdrawal approval remains mandatory in this MVP.
+- **Loans:** multiplier, optional amounts, decimal interest with monthly/annual/per-term period, flat/reducing balance, instalments/lump sum/both, duration/frequency, early repayment, late policy, cash reserve and maximum lendable percentage. An outstanding loan, pending application or undisbursed approval must block a new loan.
+- **Governance:** independent club approval; no self approval; safe configurable committee quorum. `assertCommitteeApprovals` checks distinct eligible, nonconflicted designated members. `assertNoConcurrentLoan` supplies the future loan-state guard. Future financial workflows must apply these under their own transaction locks and preserve normal role controls; there is no lending endpoint in Phase 4.
+- Money/rates use decimal strings in JSON; monetary limits use integer comparisons. Club-row locks serialize workflow changes. Unique club/version, approval-reference and active-club keys prevent duplicate and conflicting effective versions. Only lifecycle metadata changes during activation; approved snapshot updates/deletes through the model are denied.
+- Scheduled approved commitments cannot be cancelled by the proposer; later changes require a fresh proposal after activation. Correct drafts by cancelling and creating a replacement. Legacy snapshots retain their original recorded fields rather than inventing previously unspecified historical terms.
+
+### Routes, permissions and ten screens
+
+Base: `/clubs/{club}/financial-settings`. Named routes: `clubs.financial.*`. Existing `/clubs/{club}/governance` and proposal/review URLs remain compatible. The legacy proposal POST submits directly through the same validation, independent-approver checks and locking; the new form always saves a draft first. Platform governance retains role delegation/assignment but rejects direct committee designation.
+
+| Relative routes | Permission / purpose |
+| --- | --- |
+| GET `/`, `/overview`, `/shares`, `/savings`, `/loans`, `/governance`, `/pending` | `financial_settings.view`; overview, four rule sections and register |
+| GET `/create`; POST `/proposals` | `financial_settings.propose`; draft form/creation |
+| GET `/proposals/{proposal}` | `financial_settings.view`; details and comparison |
+| POST `/proposals/{proposal}/submit`, `/cancel` | `financial_settings.propose`; proposer only |
+| POST `/proposals/{proposal}/review` | `financial_settings.approve`; independent President |
+| GET `/history` | `financial_settings.history`; approved versions |
+| GET `/committee` | `committee.view`; membership/readiness/history |
+| POST `/committee` | `committee.manage`; nominate appointment/removal |
+| POST `/committee/{change}/review` | `financial_settings.approve`; independent President excluding affected member |
+
+All six permissions resolve against the current club membership. The ten requested screens reuse the dark/orange Montserrat layout, responsive navigation and accessible review controls. Discover routes with `php artisan route:list --path=financial-settings`.
+
+### Phase 4 file inventory and validation
+
+Created:
+- `app/Http/Controllers/FinancialSettingsController.php`
+- `app/Support/FinancialPolicyWorkflow.php`, `app/Support/FinancialRuleSchema.php`
+- `app/Models/CommitteeMembershipChange.php`
+- `app/Console/Commands/ActivateFinancialPolicies.php`
+- `database/migrations/2026_10_21_080330_extend_financial_governance.php`
+- `resources/views/clubs/financial-settings.blade.php`, `financial-proposal.blade.php`, `financial-summary.blade.php`
+- `tests/Feature/FinancialGovernanceTest.php`
+
+Modified:
+- `app/Http/Controllers/ClubGovernanceController.php`
+- `app/Models/FinancialRuleProposal.php`, `ClubPolicyVersion.php`, `PlatformActivity.php`
+- `app/Support/ClubMembershipWorkflow.php`, `app/Providers/AppServiceProvider.php`
+- `routes/web.php`, `routes/console.php`
+- `resources/views/layouts/app.blade.php`, `resources/views/club.blade.php`, `resources/views/clubs/dashboard.blade.php`, `resources/views/admin/clubs/governance.blade.php`
+- `resources/css/app.css`, `tests/Feature/ClubWorkspaceTest.php`, `README.md`
+
+Automated validation: **136 tests, 1,237 assertions passed** using guarded SQLite `:memory:` storage. All 101 previous tests remain, with Phase 3 expectations updated for the intentional new lifecycle and committee designation rules. Coverage includes decimal validation, independent decisions, scheduling/idempotency, isolation, immutability, database uniqueness, stale/overlapping changes, committee eligibility/conflicts/quorum, audit rollback, future loan guards and upgrade preservation. Assets build successfully. Browser checks passed at 1440, 390 and 320 pixels, including rejection validation and confirmation/cancel/submission, with no JavaScript errors.
+
+No known blocking issues. Deployment requires an operating Laravel scheduler. Actual financial transactions, share payments, savings withdrawals, loans, repayments, dividends and bank/API integration remain outside this phase.
 
 ## Phase 3 - Club Administrator workflow
 
@@ -27,7 +112,7 @@ php artisan serve --host=127.0.0.1 --port=8000
 
 - Every leadership role retains Member capabilities. Roles remain scoped to one membership and may differ across clubs.
 - By default, a Club Administrator may assign **Member** and **Committee Member** to other users. President and Accountant changes require explicit platform delegation. Club Administrator assignment remains reserved to the platform.
-- System Administrators open **Clubs -> club details -> Manage club governance** to configure delegated roles, assign sensitive roles to existing club memberships, and designate eligible Committee Members for future review of leadership financial requests. These operations cannot activate financial membership.
+- System Administrators open **Clubs -> club details -> Manage club governance** to configure delegated roles, assign sensitive roles to existing club memberships, and assign eligible Committee Member roles. Designations now require the Phase 4 independent club approval workflow. These operations cannot activate financial membership.
 - A Club Administrator cannot use the club endpoint to change reserved roles, grant themselves new privileged roles, modify another club, or edit governance delegation through ordinary club settings. The backend checks the change from previous roles, retaining reserved assignments the caller cannot change. Platform-authorised role changes use separate guarded routes and are audited.
 - A pending President explicitly assigned through authorised governance may receive `has_governance_access` for policy review only. This allows governance pages, not member financial dashboards, payment instructions or member directories. Ordinary pending applicants receive neither administrative nor President-review onboarding access.
 - **Club Admin proposes; an independent President reviews.** Proposals specify share price, minimum membership shares, loan multiplier, interest rate/method, loan duration, repayment frequency and savings withdrawal notice. Blank fields retain current approved specifications. Validation checks values but does not calculate financial amounts.

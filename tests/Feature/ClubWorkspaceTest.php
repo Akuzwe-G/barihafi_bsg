@@ -367,7 +367,7 @@ class ClubWorkspaceTest extends TestCase
         $this->membership($president, $club, ['roles' => ['President', 'Member'], 'has_governance_access' => true]);
         $this->actingAs($admin)->post(route('clubs.governance.propose', $club), ['base_version' => 0, 'rules' => ['share_price' => '1000.00', 'minimum_membership_shares' => 2], 'rationale' => 'Initial proposed membership rules.'])->assertSessionHasNoErrors();
         $proposal = FinancialRuleProposal::sole();
-        $this->assertSame('pending', $proposal->status);
+        $this->assertSame('submitted', $proposal->status);
         $this->assertDatabaseCount('club_policy_versions', 0);
         $this->post(route('clubs.governance.review', [$club, $proposal]), ['decision' => 'approved', 'confirmed' => 1])->assertForbidden();
         $this->actingAs($president)->post(route('clubs.governance.review', [$club, $proposal]), ['decision' => 'approved', 'confirmed' => 1])->assertSessionHasNoErrors();
@@ -375,7 +375,7 @@ class ClubWorkspaceTest extends TestCase
         $this->assertSame(1, $version->version);
         $this->assertSame('1000.00', $version->rules['share_price']);
         $this->assertSame($president->id, $version->approved_by);
-        $this->assertSame('approved', $proposal->fresh()->status);
+        $this->assertSame('effective', $proposal->fresh()->status);
         $this->expectException(\LogicException::class);
         $version->update(['rules' => ['share_price' => '1']]);
     }
@@ -421,9 +421,9 @@ class ClubWorkspaceTest extends TestCase
         $this->assertSame('pending', $membership->fresh()->status);
         $this->assertTrue($membership->fresh()->has_governance_access);
         $this->patch(route('admin.clubs.governance.update', $club), ['delegated_roles' => ['Member'], 'committee_approvers' => [$foreign->id], 'confirmed' => 1])->assertSessionHasErrors('committee_approvers.0');
-        $this->patch(route('admin.clubs.governance.update', $club), ['delegated_roles' => ['Member'], 'committee_approvers' => [$membership->id], 'confirmed' => 1])->assertSessionHasNoErrors();
-        $this->assertTrue($membership->fresh()->is_committee_approver);
-        $this->actingAs($admin)->get(route('clubs.governance', $club))->assertSee($user->name)->assertDontSee($outsider->name);
+        $this->patch(route('admin.clubs.governance.update', $club), ['delegated_roles' => ['Member'], 'committee_approvers' => [$membership->id], 'confirmed' => 1])->assertSessionHasErrors('committee_approvers');
+        $this->assertFalse($membership->fresh()->is_committee_approver);
+        $this->actingAs($admin)->get(route('clubs.governance', $club))->assertDontSee($outsider->name);
         $this->patch(route('admin.clubs.memberships.roles', [$club, $membership]), ['roles' => ['Accountant'], 'confirmed' => 1])->assertForbidden();
     }
 
@@ -517,7 +517,7 @@ class ClubWorkspaceTest extends TestCase
             File::ensureDirectoryExists(storage_path('app/phase3-review'));
         }
         $this->actingAs($admin);
-        $pages = ['dashboard' => [route('clubs.admin.dashboard', $club), 'Club administration'], 'members' => [route('clubs.members', $club), 'Members'], 'member-create' => [route('clubs.members.create', $club), 'Add or invite a member'], 'member-show' => [route('clubs.members.show', [$club, $membership]), $member->name], 'requests' => [route('clubs.requests', $club), 'Join requests'], 'settings' => [route('clubs.settings', $club), 'Club settings'], 'governance' => [route('clubs.governance', $club), 'Financial governance'], 'payments' => [route('clubs.payments', $club), 'Club payment instructions'], 'activities' => [route('clubs.activities', $club), 'Club administration history'], 'notifications' => [route('notifications.index'), 'Notifications']];
+        $pages = ['dashboard' => [route('clubs.admin.dashboard', $club), 'Club administration'], 'members' => [route('clubs.members', $club), 'Members'], 'member-create' => [route('clubs.members.create', $club), 'Add or invite a member'], 'member-show' => [route('clubs.members.show', [$club, $membership]), $member->name], 'requests' => [route('clubs.requests', $club), 'Join requests'], 'settings' => [route('clubs.settings', $club), 'Club settings'], 'governance' => [route('clubs.governance', $club), 'Financial Settings'], 'payments' => [route('clubs.payments', $club), 'Club payment instructions'], 'activities' => [route('clubs.activities', $club), 'Club administration history'], 'notifications' => [route('notifications.index'), 'Notifications']];
         foreach ($pages as $name => [$url,$heading]) {
             $response = $this->get($url)->assertOk()->assertSee($heading, false);
             if ($capture) {
@@ -559,7 +559,7 @@ class ClubWorkspaceTest extends TestCase
         $this->post(route('clubs.governance.review', [$club, $foreign]), ['decision' => 'approved', 'confirmed' => 1])->assertNotFound();
         $this->post(route('clubs.governance.review', [$club, $proposal]), ['decision' => 'approved', 'confirmed' => 1])->assertSessionHasNoErrors();
         $this->get(route('clubs.governance', $club))->assertOk()->assertSee('Version 1')->assertSee('1000.00');
-        $this->actingAs($admin)->get(route('clubs.governance', $club))->assertOk()->assertSee('Current: 1000.00');
+        $this->actingAs($admin)->get(route('clubs.financial.page', [$club, 'create']))->assertOk()->assertSee('Current: 1000.00');
         $this->post(route('clubs.governance.propose', $club), ['base_version' => 0, 'rules' => ['share_price' => '1'], 'rationale' => 'Stale form'])->assertSessionHasErrors('base_version');
         $this->assertDatabaseCount('club_policy_versions', 1);
     }

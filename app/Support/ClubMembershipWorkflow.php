@@ -6,6 +6,7 @@ use App\Models\Club;
 use App\Models\ClubJoinRequest;
 use App\Models\ClubMembership;
 use App\Models\ClubNotification;
+use App\Models\CommitteeMembershipChange;
 use App\Models\PlatformActivity;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -101,7 +102,12 @@ class ClubMembershipWorkflow
             $status = $data['status'] === 'unchanged' ? $membership->status : $data['status'];
             $onboarding = $status === 'pending' && in_array('Club Administrator', $roles, true) && ($membership->has_onboarding_access || ($platform && in_array('Club Administrator', $added, true)));
             $governance = $status === 'pending' && in_array('President', $roles, true) && ($membership->has_governance_access || $platform || in_array('President', $added, true));
+            $wasDesignated = $membership->is_committee_approver;
             $membership->update(['roles' => $roles, 'status' => $status, 'has_onboarding_access' => $onboarding, 'has_governance_access' => $governance, 'is_committee_approver' => in_array('Committee Member', $roles, true) && in_array($status, ['pending', 'active'], true) && $membership->is_committee_approver]);
+            if ($wasDesignated && ! $membership->is_committee_approver) {
+                $change = CommitteeMembershipChange::create(['club_id' => $club->id, 'club_membership_id' => $membership->id, 'proposed_by' => $actor->id, 'operation' => 'remove', 'status' => 'ineligible', 'reason' => 'Designation revoked because the membership no longer meets committee role or status requirements.']);
+                PlatformActivity::record($actor, 'club.committee_eligibility_revoked', $change, $club, ['status' => 'ineligible']);
+            }
             PlatformActivity::record($actor, $changed !== [] ? 'club.roles_changed' : 'club.membership_updated', $membership->user, $club, ['roles' => $roles, 'previous_roles' => $old, 'status' => $status]);
             ClubNotification::send($club, $membership->user_id, 'membership_updated', 'Your club membership status or role assignment was updated. Financial access still depends on active membership.');
         });

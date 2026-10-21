@@ -32,7 +32,7 @@ class PlatformActivity extends Model
         $allowed = ['fields', 'status', 'previous_status', 'roles', 'previous_roles', 'administrator_id', 'previous_administrator_ids', 'currency', 'brand_color', 'is_system_admin'];
 
         return static::create(['actor_id' => $actor?->id, 'action' => $action, 'subject_type' => match (true) {
-            $subject instanceof Club => 'club',$subject instanceof User => 'user', $subject instanceof ClubJoinRequest => 'join_request', $subject instanceof FinancialRuleProposal => 'rule_proposal', $subject instanceof ClubPaymentDestination => 'payment_destination',default => 'platform'
+            $subject instanceof ClubPolicyVersion => 'policy_version', $subject instanceof CommitteeMembershipChange => 'committee_change', $subject instanceof Club => 'club',$subject instanceof User => 'user', $subject instanceof ClubJoinRequest => 'join_request', $subject instanceof FinancialRuleProposal => 'rule_proposal', $subject instanceof ClubPaymentDestination => 'payment_destination',default => 'platform'
         }, 'subject_id' => $subject->getKey(), 'club_id' => $club?->id, 'changes' => array_intersect_key($changes, array_flip($allowed))]);
     }
 }

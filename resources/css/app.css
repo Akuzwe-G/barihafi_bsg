@@ -454,3 +454,28 @@ aside { overflow-y: auto; }
 .header-title > div { min-width: 0; }
 .header-club { overflow: hidden; text-overflow: ellipsis; }
 @media(max-width:800px){ .header-title .context { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .header-actions { flex-shrink: 0; } .header-club { max-width: 110px; } }
+
+.policy-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 26px; padding-bottom: 18px; border-bottom: 1px solid #363b45; }
+.policy-tabs a { font-size: 11px; padding: 8px 11px; border: 1px solid transparent; }
+.policy-tabs a.current { border: 1px solid #73502f; }
+.policy-strip { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin: 0 0 24px; font-size: 11px; color: #b0b7c4; }
+.stat-card .policy-value { font-size: 22px; overflow-wrap: anywhere; }
+.proposal-row { display: flex; justify-content: space-between; gap: 18px; padding: 20px 0; border-bottom: 1px solid #363b45; color: #edf0f5; align-items: flex-start; }
+.proposal-row > div { min-width: 0; overflow-wrap: anywhere; }
+.proposal-row p { font-size: 12px; margin: 8px 0 0; color: #b0b7c4; }
+.proposal-row .badge { flex-shrink: 0; }
+.policy-history { border-bottom: 1px solid #363b45; padding: 20px 0; }
+.policy-history summary { font-size: 13px; margin-bottom: 16px; }
+.policy-changed td:last-child { background: #342b21; color: #ffbf80; }
+.policy-changed th small { color: #ffbf80; }
+.field-error { color: #f1a7b3; }
+@media(max-width:400px) { .proposal-row { flex-direction: column; } .policy-tabs a { font-size: 10px; padding: 7px; } }
+
+@media(max-width:800px) {
+    .policy-comparison table { min-width: 0; table-layout: fixed; }
+    .policy-comparison thead { display: none; }
+    .policy-comparison tr { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); padding: 14px 0; border-bottom: 1px solid #454b57; }
+    .policy-comparison th { grid-column: 1 / -1; white-space: normal; border: 0; padding: 10px; }
+    .policy-comparison td { min-width: 0; overflow-wrap: anywhere; border: 0; padding: 10px; }
+    .policy-comparison td::before { content: attr(data-label); display: block; font-size: 10px; color: #b0b7c4; margin-bottom: 6px; }
+}

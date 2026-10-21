@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ClubPolicyVersion extends Model
 {
-    protected $fillable = ['club_id', 'version', 'financial_rule_proposal_id', 'rules', 'approved_by', 'approved_at'];
+    protected $fillable = ['club_id', 'version', 'financial_rule_proposal_id', 'rules', 'approved_by', 'approved_at', 'effective_from', 'effective_to', 'active_club_id', 'is_baseline'];
 
     protected function casts(): array
     {
-        return ['rules' => 'array', 'approved_at' => 'datetime', 'version' => 'integer'];
+        return ['rules' => 'array', 'effective_from' => 'datetime', 'effective_to' => 'datetime', 'is_baseline' => 'boolean', 'approved_at' => 'datetime', 'version' => 'integer'];
     }
 
     protected static function booted(): void

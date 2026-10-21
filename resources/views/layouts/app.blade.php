@@ -37,7 +37,7 @@
                         <a href="{{ route('clubs.settings',$club) }}" @class(['current'=>request()->routeIs('clubs.settings*')])>Club settings</a>
                         <a href="{{ route('clubs.activities',$club) }}">Club activity</a>
                     @endcan
-                    @can('govern',$club)<a href="{{ route('clubs.governance',$club) }}">Financial governance</a>@endcan
+                    @can('financial_settings.view',$club)<a href="{{ route('clubs.financial.index',$club) }}">Financial settings</a><a href="{{ route('clubs.financial.page',[$club,'committee']) }}">Committee</a>@endcan
                     @can('view',$club)<a href="{{ route('clubs.show',$club) }}">Member overview</a>@endcan
                     @if(\Illuminate\Support\Facades\Gate::allows('view',$club)||\Illuminate\Support\Facades\Gate::allows('administer',$club))<a href="{{ route('clubs.payments',$club) }}">Payment instructions</a>@endif
                 @endif
